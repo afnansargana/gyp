@@ -1,10 +1,11 @@
-// src/components/BackgroundSection.js
 import React from "react";
-import backgroundImage from "../Assets/background.jpg";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import backgroundImage from "../Assets/background.jpg";
+import { MagneticButton } from "../components/motion/MagneticButton";
 
 const BackgroundSection = () => {
-  const navigate = useNavigate(); // Get the navigate function from useNavigate
+  const navigate = useNavigate();
 
   const handleAppointmentClick = () => {
     if (!localStorage.getItem("authToken")) {
@@ -15,27 +16,65 @@ const BackgroundSection = () => {
   };
 
   return (
-    <div
-      className="relative bg-cover bg-center h-screen"
-      style={{ backgroundImage: `url(${backgroundImage})` }}
-    >
-      <div className="absolute inset-0 bg-black opacity-50"></div>
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4 sm:px-6 lg:px-8">
-        <h1 className="text-gray-400 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-          Welcome to AutoFixHub: Your Ultimate Auto Repair and Car Parts
-          Solution
-        </h1>
-        <div className="flex flex-col items-center">
-          <button
+    <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-ink-950/75 via-ink-950/55 to-ink-950/90"
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(2,6,23,0.45)_70%)]"
+        aria-hidden
+      />
+
+      <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center px-4 pb-16 pt-28 text-center sm:px-6">
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl md:text-6xl"
+        >
+          AutoFixHub
+        </motion.p>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-4 max-w-xl font-sans text-lg font-medium leading-snug text-ink-200 sm:text-xl"
+        >
+          Expert repair and genuine parts — booked in minutes.
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-3 max-w-md text-sm leading-relaxed text-ink-400 sm:text-base"
+        >
+          Islamabad&apos;s workshop for diagnostics, mechanical work, and
+          electrical service you can trust.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-10"
+        >
+          <MagneticButton
             onClick={handleAppointmentClick}
-            className="w-25% mt-8 rounded-lg bg-orange-500  text-white hover:bg-orange-600 hover:text-white py-3 px-6 font-bold text-xl  transition duration-300"
-            style={{ border: "2px solid orange" }}
+            className="btn-primary px-7 py-3.5 text-base"
           >
-            Book an Appointment
-          </button>
-        </div>
+            Book an appointment
+          </MagneticButton>
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
 };
 

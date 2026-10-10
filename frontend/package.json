@@ -3,19 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
     "@stripe/react-stripe-js": "^2.7.3",
     "@stripe/stripe-js": "^4.1.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.2",
+    "framer-motion": "^14.1.0",
+    "lucide-react": "^1.55.0",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.3",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.89.0",
     "react-icons": "^5.2.1",
     "react-router-dom": "^6.24.0",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "sonner": "^2.0.8",
+    "web-vitals": "^2.1.4",
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -1,21 +1,16 @@
 const jwt = require("jsonwebtoken");
 const { secretKey } = require("../config");
+const { attachAuthContext } = require("./rbac.middleware");
 
-const generateToken = (user) => {
-  return jwt.sign({ _id: user._id.toString() }, secretKey, {
-    expiresIn: "1h",
-  });
-};
-
-// const login = async (req, res) => {
-//   // After user is authenticated
-//   const token = generateToken(user);
-//   res.send({ token });
-// };
-
+/**
+ * Verify Bearer JWT and attach req.user / req.auth.
+ */
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  const token =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : null;
 
   if (!token) {
     return res.status(401).json({ message: "No token provided" });
@@ -23,10 +18,10 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, secretKey, (err, decoded) => {
     if (err) {
-      return res.status(403).json({ message: "Invalid token" });
+      return res.status(403).json({ message: "Invalid or expired token" });
     }
-    console.log("Authenticated user:", decoded);
-    req.user = decoded; // Attaching the user information to the request
+
+    attachAuthContext(req, decoded);
     next();
   });
 };

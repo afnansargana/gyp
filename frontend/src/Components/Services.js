@@ -1,9 +1,7 @@
 import React,{ useEffect } from "react";
-import Navbar from "./Navbar";
 import { useNavigate } from 'react-router-dom';
 import bgimg from "../Assets/Servicesbg.png";
 import { FaCogs, FaBolt, FaLightbulb, FaHeartbeat,  FaPlug, FaBatteryHalf, FaFan, FaSignal, FaTools,  } from "react-icons/fa"; // Import icons from react-icons
-import FooterSection from "./FooterSection"
 
 const Services = () => {
 
@@ -17,7 +15,7 @@ const Services = () => {
   // Function to handle click event
   
   const handleAppointmentClick = () => {
-    if (!localStorage.getItem('token')) {
+    if (!localStorage.getItem('authToken')) {
       navigate('/login', { state: { from: '/appointmentForm' } });
       return;
     }
@@ -27,7 +25,6 @@ const Services = () => {
 
   return (
     <div className="relative min-h-screen bg-gray-100">
-      <Navbar />
 
       <div className="absolute top-0 left-0 w-full h-1/2">
         <img src={bgimg} alt="Background 1" className="w-full h-full object-cover" />
@@ -176,7 +173,6 @@ const Services = () => {
 
 
       </div>
-      <FooterSection />
 
     </div>
   );

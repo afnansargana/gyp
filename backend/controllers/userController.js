@@ -2,34 +2,98 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { secretKey } = require("../config");
+const {
+  issueOtp,
+  canResendOtp,
+  verifyUserOtp,
+  RESEND_COOLDOWN_MS,
+} = require("../services/otp.service");
+
+function signAuthToken(user) {
+  return jwt.sign(
+    {
+      userId: user._id,
+      isAdmin: user.isAdmin,
+      isMechanic: user.isMechanic,
+    },
+    secretKey,
+    { expiresIn: "1h" }
+  );
+}
+
+function authResponse(user, token) {
+  return {
+    token,
+    userId: user._id,
+    username: user.username,
+    email: user.email,
+    isAdmin: user.isAdmin,
+    isMechanic: user.isMechanic,
+    isVerified: user.isVerified,
+  };
+}
 
 const userController = {
   register: async (req, res) => {
     try {
       const { username, email, password } = req.body;
 
-      // Check if the username or email already exists in the database
+      if (!username || !email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (String(password).length < 8) {
+        return res
+          .status(400)
+          .json({ message: "Password must be at least 8 characters" });
+      }
+
       const existingUser = await User.findOne({
-        $or: [{ username }, { email }],
+        $or: [{ username }, { email: email.toLowerCase() }],
       });
+
       if (existingUser) {
+        // Allow re-register flow for unverified accounts with same email
+        if (
+          !existingUser.isVerified &&
+          existingUser.email.toLowerCase() === email.toLowerCase()
+        ) {
+          existingUser.username = username;
+          existingUser.password = password;
+          await existingUser.save();
+
+          const otpPayload = await issueOtp(existingUser);
+          return res.status(200).json({
+            message: "Account pending verification. OTP resent.",
+            requiresOtp: true,
+            email: existingUser.email,
+            expiresAt: otpPayload.expiresAt,
+            ...(otpPayload.otp ? { otp: otpPayload.otp } : {}),
+          });
+        }
+
         return res
           .status(400)
           .json({ message: "Username or email already exists" });
       }
 
-      // Create a new user document with the hashed password
-      const newUser = new User({ username, email, password });
+      const newUser = new User({
+        username,
+        email: email.toLowerCase(),
+        password,
+        isVerified: false,
+      });
       await newUser.save();
 
-      // Generate JWT token for the newly registered user using newUser._id
-      const token = jwt.sign({ _id: newUser._id.toString() }, secretKey, {
-        expiresIn: "1h",
+      const otpPayload = await issueOtp(newUser);
+
+      res.status(201).json({
+        message: "Registration started. Please verify the OTP sent to your email.",
+        requiresOtp: true,
+        email: newUser.email,
+        expiresAt: otpPayload.expiresAt,
+        ...(otpPayload.otp ? { otp: otpPayload.otp } : {}),
       });
-
-      const decoded = jwt.verify(token, secretKey);
-
-      res.status(201).json({ message: "User registered successfully", token });
     } catch (error) {
       console.error("Error registering user:", error);
       res
@@ -38,24 +102,101 @@ const userController = {
     }
   },
 
+  verifyOtp: async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        return res.status(400).json({ message: "Email and OTP are required" });
+      }
+
+      const user = await User.findOne({ email: email.toLowerCase() });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const result = await verifyUserOtp(user, otp);
+
+      if (!result.ok) {
+        const messages = {
+          already_verified: "Account is already verified. Please log in.",
+          no_otp: "No OTP pending. Please request a new code.",
+          expired: "OTP has expired. Please request a new code.",
+          invalid: "Invalid OTP. Please try again.",
+        };
+        return res
+          .status(400)
+          .json({ message: messages[result.reason] || "OTP verification failed" });
+      }
+
+      const token = signAuthToken(user);
+      user.tokens = user.tokens.concat({ token });
+      await user.save();
+
+      res.status(200).json({
+        message: "Email verified successfully",
+        ...authResponse(user, token),
+      });
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      res.status(500).json({ message: "Failed to verify OTP: Server Error" });
+    }
+  },
+
+  resendOtp: async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await User.findOne({ email: email.toLowerCase() });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.isVerified) {
+        return res
+          .status(400)
+          .json({ message: "Account is already verified. Please log in." });
+      }
+
+      const cooldown = canResendOtp(user);
+      if (!cooldown.allowed) {
+        return res.status(429).json({
+          message: "Please wait before requesting another OTP",
+          retryAfterMs: cooldown.retryAfterMs,
+          cooldownMs: RESEND_COOLDOWN_MS,
+        });
+      }
+
+      const otpPayload = await issueOtp(user);
+
+      res.status(200).json({
+        message: "OTP resent successfully",
+        requiresOtp: true,
+        email: user.email,
+        expiresAt: otpPayload.expiresAt,
+        ...(otpPayload.otp ? { otp: otpPayload.otp } : {}),
+      });
+    } catch (error) {
+      console.error("Error resending OTP:", error);
+      res.status(500).json({ message: "Failed to resend OTP: Server Error" });
+    }
+  },
+
   login: async (req, res) => {
     try {
       const { username, password } = req.body;
 
-      // Find the user by username
       const user = await User.findOne({ username });
       if (!user) {
-        console.log("User not found");
         return res
           .status(401)
           .json({ message: "Invalid username or password" });
       }
 
-      console.log("User found:", user);
-
-      // Check if the provided password matches the stored password
       const isPasswordValid = await bcrypt.compare(password, user.password);
-      console.log("Password valid:", isPasswordValid);
 
       if (!isPasswordValid) {
         return res
@@ -63,24 +204,22 @@ const userController = {
           .json({ message: "Invalid username or password" });
       }
 
-      // Generate a new JWT token
-      const token = jwt.sign(
-        {
-          userId: user._id,
-          isAdmin: user.isAdmin,
-          isMechanic: user.isMechanic,
-        },
-        secretKey,
-        { expiresIn: "1h" }
-      );
+      if (!user.isVerified) {
+        const otpPayload = await issueOtp(user);
+        return res.status(403).json({
+          message: "Email not verified. Please enter the OTP we just sent.",
+          requiresOtp: true,
+          email: user.email,
+          expiresAt: otpPayload.expiresAt,
+          ...(otpPayload.otp ? { otp: otpPayload.otp } : {}),
+        });
+      }
 
-      // Add the token to the tokens array in the user document
+      const token = signAuthToken(user);
       user.tokens = user.tokens.concat({ token });
       await user.save();
 
-      res
-        .status(200)
-        .json({ token, isAdmin: user.isAdmin, isMechanic: user.isMechanic });
+      res.status(200).json(authResponse(user, token));
     } catch (error) {
       console.error("Error logging in user:", error);
       res.status(500).json({ message: "Failed to login: Server Error" });

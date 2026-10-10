@@ -12,8 +12,9 @@ import Services from "./Components/Services";
 import CarParts from "./Components/CarParts";
 import AboutUs from "./Components/AboutUs";
 import Contact from "./Components/Contact";
-import Signup from "./Components/Signup";
-import Login from "./Components/Login";
+import SignupPage from "./pages/auth/SignupPage";
+import LoginPage from "./pages/auth/LoginPage";
+import VerifyOtpPage from "./pages/auth/VerifyOtpPage";
 import ProductDetails from "./Components/ProductDetails";
 import Cart from "./Components/Cart";
 import AppointmentForm from "./Components/AppointmentForm";
@@ -21,13 +22,13 @@ import Profile from "./Components/Profile";
 import Sidebar from "./Components/Admin/sidebar";
 import Checkout from "./Components/Checkout";
 import Dashboard from "./Components/Admin/Dashboard";
-import MechanicDashboard from "./Components/Mechanic/Dashboard"; // Import mechanic dashboard
-import AdminAppointments from "./Components/Admin/adminAppointments"; // Import the AdminAppointments component
-import AdminUsers from "./Components/Admin/adminUsers"; // Import the AdminUsers component
+import MechanicDashboard from "./Components/Mechanic/Dashboard";
+import AdminAppointments from "./Components/Admin/adminAppointments";
+import AdminUsers from "./Components/Admin/adminUsers";
 import AdminOrders from "./Components/Admin/adminOrders";
 import AdminServices from "./Components/Admin/adminServices";
 import AdminProducts from "./Components/Admin/adminProducts";
-
+import { PublicLayout } from "./components/layout/PublicLayout";
 import { CartProvider } from "./Components/CartContext";
 
 function RequireAuth({ children, isAdmin, isMechanic }) {
@@ -38,17 +39,14 @@ function RequireAuth({ children, isAdmin, isMechanic }) {
     return <Navigate to="/login" state={{ from: location }} />;
   }
 
-  // Check if the user is an admin and trying to access an admin route
   if (isAdmin && location.pathname.startsWith("/admin")) {
     return children;
   }
 
-  // Check if the user is a mechanic and trying to access a mechanic route
   if (isMechanic && location.pathname.startsWith("/mechanic")) {
     return children;
   }
 
-  // Redirect admins and mechanics to their respective dashboards if they are trying to access non-admin/mechanic routes
   if (isAdmin) {
     return <Navigate to="/admin/dashboard" />;
   }
@@ -60,12 +58,22 @@ function RequireAuth({ children, isAdmin, isMechanic }) {
   return children;
 }
 
+function syncAuthFlags(setIsLoggedIn, setIsAdmin, setIsMechanic) {
+  setIsLoggedIn(!!localStorage.getItem("authToken"));
+  setIsAdmin(JSON.parse(localStorage.getItem("isAdmin") || "false"));
+  setIsMechanic(JSON.parse(localStorage.getItem("isMechanic") || "false"));
+}
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     !!localStorage.getItem("authToken")
   );
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isMechanic, setIsMechanic] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(
+    () => JSON.parse(localStorage.getItem("isAdmin") || "false")
+  );
+  const [isMechanic, setIsMechanic] = useState(
+    () => JSON.parse(localStorage.getItem("isMechanic") || "false")
+  );
   const [profileImage, setProfileImage] = useState(null);
   const [username, setUsername] = useState("");
 
@@ -73,11 +81,13 @@ function App() {
     setProfileImage(imageUrl);
   };
 
+  const handleAuthSuccess = () => {
+    syncAuthFlags(setIsLoggedIn, setIsAdmin, setIsMechanic);
+  };
+
   useEffect(() => {
     const handleStorageChange = () => {
-      setIsLoggedIn(!!localStorage.getItem("authToken"));
-      setIsAdmin(JSON.parse(localStorage.getItem("isAdmin")) || false);
-      setIsMechanic(JSON.parse(localStorage.getItem("isMechanic")) || false);
+      syncAuthFlags(setIsLoggedIn, setIsAdmin, setIsMechanic);
     };
 
     const fetchUserProfile = async () => {
@@ -123,47 +133,57 @@ function App() {
           <Routes>
             <Route
               path="/login"
-              element={<Login onLogin={() => setIsLoggedIn(true)} />}
+              element={<LoginPage onLogin={handleAuthSuccess} />}
             />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/" element={<HomePage />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/car-parts" element={<CarParts />} />
-            <Route path="/about-us" element={<AboutUs />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route
-              path="/cart"
-              element={
-                <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                  <Cart />
-                </RequireAuth>
-              }
+              path="/verify-otp"
+              element={<VerifyOtpPage onLogin={handleAuthSuccess} />}
             />
-            <Route
-              path="/appointmentForm"
-              element={
-                <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                  <AppointmentForm />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                  <Profile onProfileImageUpdate={handleProfileImageUpdate} />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/checkout"
-              element={
-                <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                  <Checkout />
-                </RequireAuth>
-              }
-            />
+
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/car-parts" element={<CarParts />} />
+              <Route path="/about-us" element={<AboutUs />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route
+                path="/cart"
+                element={
+                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
+                    <Cart />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/appointmentForm"
+                element={
+                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
+                    <AppointmentForm />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
+                    <Profile
+                      onProfileImageUpdate={handleProfileImageUpdate}
+                    />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
+                    <Checkout />
+                  </RequireAuth>
+                }
+              />
+            </Route>
+
             <Route
               path="/admin/dashboard"
               element={

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext"; // Correct import
-import Navbar from "./Navbar";
-import FooterSection from "./FooterSection";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -43,7 +41,6 @@ const ProductDetails = () => {
 
   return (
     <div className="container mx-auto pt-20">
-      <Navbar />
       <div className="max-w-4xl mx-auto bg-white shadow-md rounded overflow-hidden p-8 mt-8">
         <div className="flex flex-col md:flex-row items-center">
           {/* Left Side - Product Image */}
@@ -83,7 +80,6 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
-      <FooterSection />
     </div>
   );
 };

@@ -34,6 +34,22 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isVerified: {
+      type: Boolean,
+      default: true, // existing users stay usable; new signups set false until OTP
+    },
+    otpHash: {
+      type: String,
+      default: null,
+    },
+    otpExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    otpLastSentAt: {
+      type: Date,
+      default: null,
+    },
     tokens: [
       {
         token: {

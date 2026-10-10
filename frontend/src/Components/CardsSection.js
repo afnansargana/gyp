@@ -1,66 +1,58 @@
 import React from "react";
-import { FaCar, FaTools, FaCog } from "react-icons/fa"; // Import icons from react-icons
-import cardbackground from "../Assets/Cardsbg.png"; // Import the background image
+import { Car, Cog, Wrench } from "lucide-react";
+import { FadeIn } from "../components/motion/FadeIn";
+import { StaggerList } from "../components/motion/StaggerList";
+
+const services = [
+  {
+    icon: Car,
+    title: "Auto electrical",
+    body: "Specialist diagnostics with modern scanning tools for complex electrical faults.",
+  },
+  {
+    icon: Wrench,
+    title: "Mechanical works",
+    body: "From routine maintenance to major repairs — handled by experienced technicians.",
+  },
+  {
+    icon: Cog,
+    title: "Hybrid care",
+    body: "Dedicated hybrid expertise so battery systems and drivetrains stay reliable.",
+  },
+];
 
 const CardsSection = () => {
-    return (
-<div className="flex justify-center mb-12 bg-cover bg-center h-56"
- style={{
-  cardbackground: "url('cardbackground')",
-}}
->
-          <div
-            className="bg-white rounded-lg p-4 w-64 h-80 mb-4 mr-4 shadow-md flex flex-col items-center justify-center hover:scale-110 transition duration-300 ease-in-out hover:border-orange-500 hover:border-b-4"
-            style={{
-              zIndex: 1,
-              position: "absolute",
-              bottom: "-30%",
-              left:"15%",
-              margin: "0 auto",
-              padding: "20px",
-            }}
-          >
-            <FaCar size={35} className="text-orange-600 mb-2 " />
-            <h2 className="text-2xl font-bold mb-2 text-grey-600">Auto Electrical Services</h2>
-            <p className="text-sm text-gray-500">
-            Using the newest instruments and scanning systems, our technicians will do maintenance and repairs on your car using a specialist diagnostic.            </p>
-          </div>
-          <div
-            className="bg-white rounded-lg p-4 w-64 h-80 mb-4 mr-4 shadow-md flex flex-col items-center justify-center hover:scale-110 transition duration-300 ease-in-out hover:border-orange-500 hover:border-b-4"
-            style={{
-              zIndex: 2,
-              position: "absolute",
-              bottom: "-30%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              margin: "0 auto",
-              padding: "20px",
-            }}
-          >
-            <FaTools size={35} className="text-orange-600 mb-2" />
-            <h2 className="text-2xl font-bold mb-2 text-grey-600 ">Auto Mechanical Works</h2>
-            <p className="text-sm text-gray-500">
-            Our Mechanical Works specialize in providing expert mechanical services for all types of vehicles, from routine maintenance to major repairs.             </p>
-          </div>
-          <div
-            className="bg-white rounded-lg p-4 w-64 h-80 mb-4 shadow-md flex flex-col items-center justify-center hover:scale-110 transition duration-300 ease-in-out hover:border-orange-500 hover:border-b-4"
-            style={{
-              zIndex: 3,
-              position: "absolute",
-              bottom: "-30%",
-              right: "15%",
-              margin: "0 auto",
-              padding: "20px",
-            }}
-          >
-            <FaCog size={35} className="text-orange-600 mb-2" />
-            <h2 className="text-2xl font-bold mb-2 text-grey-600">Hybrid vehicles Services</h2>
-            <p className="text-sm text-gray-500">
-            Expert mechanics at Auto Surgeon Workshop, Islamabad, specialize in hybrid vehicle services, ensuring top-notch care for your hybrid cars            </p>
-          </div>
-        </div>
-    )
-}
+  return (
+    <section className="relative z-10 -mt-16 bg-transparent px-4 pb-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <FadeIn className="mb-8 text-center sm:mb-10">
+          <h2 className="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
+            What we fix best
+          </h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm text-ink-500 sm:text-base">
+            Focused service lines so every visit has a clear specialist path.
+          </p>
+        </FadeIn>
 
+        <StaggerList className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {services.map(({ icon: Icon, title, body }) => (
+            <article
+              key={title}
+              className="group rounded-2xl border border-ink-200/80 bg-white p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brand-400/40 hover:shadow-lift"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600 transition group-hover:bg-brand-500 group-hover:text-ink-950">
+                <Icon className="h-6 w-6" strokeWidth={1.75} />
+              </div>
+              <h3 className="font-display text-lg font-semibold text-ink-900">
+                {title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-500">{body}</p>
+            </article>
+          ))}
+        </StaggerList>
+      </div>
+    </section>
+  );
+};
 
 export default CardsSection;

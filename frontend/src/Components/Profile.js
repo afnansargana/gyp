@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Navbar from "./Navbar";
 import { useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 
@@ -137,7 +136,7 @@ const Profile = ({ onProfileImageUpdate }) => {
 
   return (
     <div className="container mx-auto px-4">
-      {!isAdmin && !isMechanic && <Navbar />}
+      
       <h2 className="text-3xl font-bold mt-28 mb-4 bg-orange-500 text-white py-2 px-4 rounded-lg text-center">
         Profile
       </h2>

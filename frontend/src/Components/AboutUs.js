@@ -1,7 +1,5 @@
 import React from 'react';
-import Navbar from './Navbar';
 import AboutImg1 from "../Assets/About1.png"
-import FooterSection from "./FooterSection"
 import bgimg from "../Assets/Servicesbg.png";
 
 
@@ -9,7 +7,6 @@ const AboutUs = () => {
   return (
 <div>
     <div className="flex flex-col lg:flex-row items-center justify-center py-20">
-        <Navbar/>
       <div className="lg:w-1/2 xl:w-2/3 pr-20">
         <h1 className="text-3xl font-bold m-8 line-orange-500 text-center" >About Our Workshop</h1>
         <p className="text-lg font-bold text-center text-gray-400">
@@ -34,7 +31,6 @@ const AboutUs = () => {
         <img src={AboutImg1} alt="Image 1" className="absolute top-0 left-0 w-full h-full object-cover rounded-lg" />
       </div>
     </div>
-    <FooterSection />
 
 </div>
   );

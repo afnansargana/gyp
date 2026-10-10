@@ -1,8 +1,6 @@
 // src/components/Contact.js
 import React, { useState } from 'react';
 import axios from 'axios';
-import Navbar from './Navbar';
-import FooterSection from './FooterSection';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -33,10 +31,9 @@ const Contact = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-100">
-      <Navbar />
+    <div className="relative min-h-screen bg-ink-50 pt-20">
       <div className="container mx-auto px-4 py-8">
-        <h2 className="text-3xl font-bold m-20 text-center bg-orange-500 text-white py-2 px-4 rounded-lg">
+        <h2 className="mb-8 text-center font-display text-3xl font-semibold text-ink-900">
           Contact Us
         </h2>
         {message && <p className="text-center mb-4">{message}</p>}
@@ -84,7 +81,6 @@ const Contact = () => {
           </button>
         </form>
       </div>
-      <FooterSection />
     </div>
   );
 };

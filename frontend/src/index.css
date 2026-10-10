@@ -2,17 +2,120 @@
 @tailwind components;
 @tailwind utilities;
 
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root {
+  --surface: 15 23 42;
+  --surface-elevated: 30 41 59;
+  --text: 241 245 249;
+  --muted: 148 163 184;
+  --primary: 6 182 212;
+  --ring: 34 211 238;
+  --danger: 244 63 94;
+  --success: 16 185 129;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    @apply border-ink-800;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    /* Light public shell until layouts migrate; AuthLayout will use bg-mesh-dark */
+    @apply m-0 font-sans bg-ink-50 text-ink-900 antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight text-ink-900;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+      monospace;
+  }
+
+  ::selection {
+    @apply bg-brand-500/30 text-ink-50;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply rounded-2xl border border-white/10 bg-white/5 shadow-glass backdrop-blur-xl;
+  }
+
+  .glass-panel-strong {
+    @apply rounded-2xl border border-white/15 bg-ink-900/80 shadow-glass backdrop-blur-2xl;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border border-ink-800 bg-ink-900/60 shadow-soft transition duration-300;
+  }
+
+  .surface-card-hover {
+    @apply surface-card hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-lift;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5
+      font-semibold text-ink-950 shadow-lift transition duration-200
+      hover:bg-brand-400
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300
+      focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink-600
+      bg-ink-800/60 px-5 py-2.5 font-semibold text-ink-100 transition duration-200
+      hover:border-ink-500 hover:bg-ink-700/80
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-400
+      focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2
+      font-medium text-ink-300 transition duration-200
+      hover:bg-white/5 hover:text-ink-50
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-500
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-ink-700 bg-ink-900/80 px-4 py-2.5
+      text-ink-100 placeholder:text-ink-500 shadow-neu transition duration-200
+      focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30;
+  }
+
+  .label-field {
+    @apply mb-1.5 block text-sm font-medium text-ink-300;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgb(30 41 59) 0%,
+      rgb(51 65 85) 50%,
+      rgb(30 41 59) 100%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-xl;
+  }
+}
+
+/* Sonner toast theme alignment */
+[data-sonner-toaster] [data-sonner-toast] {
+  --normal-bg: rgb(30 41 59);
+  --normal-border: rgb(51 65 85);
+  --normal-text: rgb(241 245 249);
 }

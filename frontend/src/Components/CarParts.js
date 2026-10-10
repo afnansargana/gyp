@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import Navbar from "./Navbar";
-import FooterSection from "./FooterSection";
 import { useCart } from "./CartContext";
 
 const CarParts = () => {
@@ -36,7 +34,6 @@ const CarParts = () => {
 
   return (
     <div className="container mx-auto pt-20">
-      <Navbar />
       <h1 className="text-3xl font-bold mt-8 bg-orange-500 text-white py-2 px-4 rounded-lg text-center">
         Car Parts
       </h1>
@@ -71,7 +68,6 @@ const CarParts = () => {
           </div>
         ))}
       </div>
-      <FooterSection />
     </div>
   );
 };

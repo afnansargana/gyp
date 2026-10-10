@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Navbar from "./Navbar";
 import { jwtDecode } from "jwt-decode";
-import FooterSection from "./FooterSection";
 
 const AppointmentForm = () => {
   const [formData, setFormData] = useState({
@@ -196,8 +194,6 @@ const AppointmentForm = () => {
         <h2 className="text-3xl font-bold mt-20 mb-4 bg-orange-500 text-white py-2 px-4 rounded-lg text-center">
           Book an Appointment
         </h2>
-
-        <Navbar />
         <form
           onSubmit={handleSubmit}
           className="max-w-xl mx-auto mt-14 my-10 p-8 rounded-lg shadow"
@@ -288,7 +284,6 @@ const AppointmentForm = () => {
           </button>
         </form>
       </div>
-      <FooterSection />
     </div>
   );
 };

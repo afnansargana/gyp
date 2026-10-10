@@ -8,7 +8,6 @@ import {
 } from "@stripe/react-stripe-js";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import Navbar from "./Navbar";
 import { useCart } from "./CartContext";
 
 const stripePromise = loadStripe(
@@ -120,7 +119,6 @@ const CheckoutForm = () => {
 
   return (
     <div className="container mx-auto mt-10">
-      <Navbar />
       <h2 className="text-3xl font-bold mt-28 mb-4 bg-orange-500 text-white py-2 px-4 rounded-lg text-center">
         Checkout
       </h2>

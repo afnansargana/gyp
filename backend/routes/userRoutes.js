@@ -9,6 +9,8 @@ const upload = require("../middleware/uploadMiddleware");
 // Define routes for user authentication
 router.post("/register", userController.register);
 router.post("/login", userController.login);
+router.post("/verify-otp", userController.verifyOtp);
+router.post("/resend-otp", userController.resendOtp);
 
 // Define routes for user profile management
 router.get("/profile", authenticateToken, userController.getUserProfile);

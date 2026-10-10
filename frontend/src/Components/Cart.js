@@ -1,7 +1,6 @@
 import React from "react";
 import { useCart } from "./CartContext";
 import { useNavigate } from "react-router-dom";
-import Navbar from "./Navbar";
 
 const Cart = () => {
   const {
@@ -20,7 +19,6 @@ const Cart = () => {
 
   return (
     <div className="cart">
-      <Navbar />
       <h1 className="mt-28 ml-4 mr-4 text-center font-bold text-3xl bg-orange-500 p-3 rounded-lg text-white">
         Your Cart
       </h1>
