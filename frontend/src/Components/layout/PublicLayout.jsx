@@ -1,8 +1,8 @@
 import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Navbar from "../../Components/Navbar";
-import FooterSection from "../../Components/FooterSection";
+import Navbar from "../Navbar";
+import FooterSection from "../FooterSection";
 
 /**
  * Shared shell for customer-facing pages: nav + animated outlet + footer.

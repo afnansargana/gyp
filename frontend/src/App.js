@@ -1,12 +1,6 @@
-import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
 import HomePage from "./Components/HomePage";
 import Services from "./Components/Services";
 import CarParts from "./Components/CarParts";
@@ -28,205 +22,213 @@ import AdminUsers from "./Components/Admin/adminUsers";
 import AdminOrders from "./Components/Admin/adminOrders";
 import AdminServices from "./Components/Admin/adminServices";
 import AdminProducts from "./Components/Admin/adminProducts";
-import { PublicLayout } from "./components/layout/PublicLayout";
+import { PublicLayout } from "./Components/layout/PublicLayout";
 import { CartProvider } from "./Components/CartContext";
-
-function RequireAuth({ children, isAdmin, isMechanic }) {
-  const location = useLocation();
-  const isLoggedIn = !!localStorage.getItem("authToken");
-
-  if (!isLoggedIn) {
-    return <Navigate to="/login" state={{ from: location }} />;
-  }
-
-  if (isAdmin && location.pathname.startsWith("/admin")) {
-    return children;
-  }
-
-  if (isMechanic && location.pathname.startsWith("/mechanic")) {
-    return children;
-  }
-
-  if (isAdmin) {
-    return <Navigate to="/admin/dashboard" />;
-  }
-
-  if (isMechanic) {
-    return <Navigate to="/mechanic/dashboard" />;
-  }
-
-  return children;
-}
-
-function syncAuthFlags(setIsLoggedIn, setIsAdmin, setIsMechanic) {
-  setIsLoggedIn(!!localStorage.getItem("authToken"));
-  setIsAdmin(JSON.parse(localStorage.getItem("isAdmin") || "false"));
-  setIsMechanic(JSON.parse(localStorage.getItem("isMechanic") || "false"));
-}
+import { ProtectedRoute } from "./app/router/ProtectedRoute";
+import { RoleRoute } from "./app/router/RoleRoute";
+import { useAuthStore } from "./store/useAuthStore";
+import { apiClient } from "./lib/api/client";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem("authToken")
-  );
-  const [isAdmin, setIsAdmin] = useState(
-    () => JSON.parse(localStorage.getItem("isAdmin") || "false")
-  );
-  const [isMechanic, setIsMechanic] = useState(
-    () => JSON.parse(localStorage.getItem("isMechanic") || "false")
-  );
+  const {
+    isAuthenticated,
+    isAdmin,
+    isMechanic,
+    username,
+    hydrate,
+    setSession,
+  } = useAuthStore();
   const [profileImage, setProfileImage] = useState(null);
-  const [username, setUsername] = useState("");
 
   const handleProfileImageUpdate = (imageUrl) => {
     setProfileImage(imageUrl);
   };
 
   const handleAuthSuccess = () => {
-    syncAuthFlags(setIsLoggedIn, setIsAdmin, setIsMechanic);
+    hydrate();
   };
 
+  // Re-sync auth state on storage events (multi-tab support)
   useEffect(() => {
-    const handleStorageChange = () => {
-      syncAuthFlags(setIsLoggedIn, setIsAdmin, setIsMechanic);
-    };
+    const onStorage = () => hydrate();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [hydrate]);
 
+  // Sync profile image + session on login
+  useEffect(() => {
     const fetchUserProfile = async () => {
+      if (!isAuthenticated) {
+        setProfileImage(null);
+        return;
+      }
       try {
-        const token = localStorage.getItem("authToken");
-        if (!token) return;
-
-        const response = await axios.get(
-          "http://localhost:3000/api/users/profile",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (response.data) {
-          setUsername(response.data.username);
-          if (response.data.profileImage) {
-            setProfileImage(
-              `http://localhost:3000${response.data.profileImage}`
-            );
+        const { data } = await apiClient.get("/users/profile");
+        if (data?.profileImage) {
+          setProfileImage(`http://localhost:3000${data.profileImage}`);
+        }
+        if (data) {
+          const token = localStorage.getItem("authToken");
+          if (token) {
+            setSession({
+              token,
+              userId: data._id || data.userId,
+              username: data.username,
+              email: data.email,
+              isAdmin: data.isAdmin,
+              isMechanic: data.isMechanic,
+            });
           }
         }
       } catch (error) {
         console.error("Error fetching profile data:", error);
       }
     };
-
     fetchUserProfile();
-    window.addEventListener("storage", handleStorageChange);
+  }, [isAuthenticated, setSession]);
 
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
+  const isStaff = isAuthenticated && (isAdmin || isMechanic);
 
   return (
     <Router>
       <CartProvider>
+        {/* ── Global toast provider ── */}
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          toastOptions={{ duration: 4000 }}
+        />
+
         <div className="App">
-          {isLoggedIn && (isAdmin || isMechanic) && (
+          {/* ── Staff sidebar — fixed, offset content ── */}
+          {isStaff && (
             <Sidebar profileImage={profileImage} username={username} />
           )}
-          <Routes>
-            <Route
-              path="/login"
-              element={<LoginPage onLogin={handleAuthSuccess} />}
-            />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route
-              path="/verify-otp"
-              element={<VerifyOtpPage onLogin={handleAuthSuccess} />}
-            />
 
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/car-parts" element={<CarParts />} />
-              <Route path="/about-us" element={<AboutUs />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
+          {/* ── Main content with sidebar offset ── */}
+          <main
+            className={
+              isStaff
+                ? "ml-[260px] min-h-screen transition-all duration-300"
+                : ""
+            }
+          >
+            <Routes>
+              {/* ── Auth routes (no layout) ── */}
               <Route
-                path="/cart"
-                element={
-                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                    <Cart />
-                  </RequireAuth>
-                }
+                path="/login"
+                element={<LoginPage onLogin={handleAuthSuccess} />}
               />
+              <Route path="/signup" element={<SignupPage />} />
               <Route
-                path="/appointmentForm"
-                element={
-                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                    <AppointmentForm />
-                  </RequireAuth>
-                }
+                path="/verify-otp"
+                element={<VerifyOtpPage onLogin={handleAuthSuccess} />}
               />
-              <Route
-                path="/profile"
-                element={
-                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                    <Profile
-                      onProfileImageUpdate={handleProfileImageUpdate}
-                    />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/checkout"
-                element={
-                  <RequireAuth isAdmin={isAdmin} isMechanic={isMechanic}>
-                    <Checkout />
-                  </RequireAuth>
-                }
-              />
-            </Route>
 
-            <Route
-              path="/admin/dashboard"
-              element={
-                <RequireAuth isAdmin={isAdmin}>
-                  <Dashboard />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin/appointments"
-              element={
-                <RequireAuth isAdmin={isAdmin}>
-                  <AdminAppointments />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <RequireAuth isAdmin={isAdmin}>
-                  <AdminUsers />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin/orders"
-              element={
-                <RequireAuth isAdmin={isAdmin}>
-                  <AdminOrders />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/mechanic/dashboard"
-              element={
-                <RequireAuth isMechanic={isMechanic}>
-                  <MechanicDashboard />
-                </RequireAuth>
-              }
-            />
-            <Route path="/admin/services" element={<AdminServices />} />
-            <Route path="/admin/products" element={<AdminProducts />} />
-          </Routes>
+              {/* ── Public routes (with Navbar) ── */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/car-parts" element={<CarParts />} />
+                <Route path="/about-us" element={<AboutUs />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route
+                  path="/cart"
+                  element={
+                    <ProtectedRoute>
+                      <Cart />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/appointmentForm"
+                  element={
+                    <ProtectedRoute>
+                      <AppointmentForm />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute allowStaff>
+                      <Profile onProfileImageUpdate={handleProfileImageUpdate} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/checkout"
+                  element={
+                    <ProtectedRoute>
+                      <Checkout />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+
+              {/* ── Admin routes ── */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <Dashboard />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/appointments"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <AdminAppointments />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <AdminUsers />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <AdminOrders />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/services"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <AdminServices />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/products"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <AdminProducts />
+                  </RoleRoute>
+                }
+              />
+
+              {/* ── Mechanic routes ── */}
+              <Route
+                path="/mechanic/dashboard"
+                element={
+                  <RoleRoute roles={["mechanic"]}>
+                    <MechanicDashboard />
+                  </RoleRoute>
+                }
+              />
+            </Routes>
+          </main>
         </div>
       </CartProvider>
     </Router>

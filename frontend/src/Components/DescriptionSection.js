@@ -1,8 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import engineImg from "../Assets/engine.jpg";
-import { FadeIn } from "../components/motion/FadeIn";
-import { MagneticButton } from "../components/motion/MagneticButton";
+import { FadeIn } from "./motion/FadeIn";
+import { MagneticButton } from "./motion/MagneticButton";
 
 const DescriptionSection = () => {
   const navigate = useNavigate();

@@ -6,13 +6,30 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
-  upload, // Import the multer upload middleware
+  upload,
 } = require("../controllers/productController");
+const authenticateToken = require("../middleware/authMiddleware");
+const { requireAdmin } = require("../middleware/rbac.middleware");
 
+// Public catalog reads
 router.get("/", getProducts);
 router.get("/:id", getProductById);
-router.post("/", upload.single("image"), createProduct); // Handle file uploads with multer
-router.put("/:id", upload.single("image"), updateProduct); // Handle file uploads with multer
-router.delete("/:id", deleteProduct);
+
+// Admin-only mutations
+router.post(
+  "/",
+  authenticateToken,
+  requireAdmin,
+  upload.single("image"),
+  createProduct
+);
+router.put(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  upload.single("image"),
+  updateProduct
+);
+router.delete("/:id", authenticateToken, requireAdmin, deleteProduct);
 
 module.exports = router;

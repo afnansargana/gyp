@@ -21,14 +21,31 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status;
     const message =
       error.response?.data?.message ||
       error.message ||
       "Something went wrong";
+
+    // Session expired / unauthorized — clear client auth
+    if (status === 401 && localStorage.getItem("authToken")) {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("username");
+      localStorage.removeItem("email");
+      localStorage.removeItem("isAdmin");
+      localStorage.removeItem("isMechanic");
+      localStorage.removeItem("role");
+      localStorage.removeItem("mechanicId");
+      if (window.location.pathname !== "/login") {
+        window.location.assign("/login");
+      }
+    }
+
     return Promise.reject({
       ...error,
       message,
-      status: error.response?.status,
+      status,
       data: error.response?.data,
     });
   }

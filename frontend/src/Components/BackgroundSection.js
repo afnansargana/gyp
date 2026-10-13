@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import backgroundImage from "../Assets/background.jpg";
-import { MagneticButton } from "../components/motion/MagneticButton";
+import { MagneticButton } from "./motion/MagneticButton";
 
 const BackgroundSection = () => {
   const navigate = useNavigate();

@@ -4,8 +4,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import { Lock, User } from "lucide-react";
-import { AuthLayout } from "../../components/layout/AuthLayout";
-import { Button, Input, notify } from "../../components/ui";
+import { AuthLayout } from "../../Components/layout/AuthLayout";
+import { Button, Input, notify } from "../../Components/ui";
 import { loginSchema } from "../../lib/validations/auth.schema";
 import { authApi } from "../../lib/api/auth.api";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -14,6 +14,7 @@ export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
   const setPendingVerification = useAuthStore((s) => s.setPendingVerification);
+  const homePathForRole = useAuthStore((s) => s.homePathForRole);
   const [formError, setFormError] = useState("");
 
   const {
@@ -25,12 +26,6 @@ export default function LoginPage({ onLogin }) {
     defaultValues: { username: "", password: "" },
   });
 
-  const redirectByRole = (data) => {
-    if (data.isAdmin) navigate("/admin/dashboard");
-    else if (data.isMechanic) navigate("/mechanic/dashboard");
-    else navigate("/");
-  };
-
   const onSubmit = async (values) => {
     setFormError("");
     try {
@@ -38,7 +33,7 @@ export default function LoginPage({ onLogin }) {
       setSession(data);
       onLogin?.();
       notify.success("Welcome back", `Signed in as ${data.username || values.username}`);
-      redirectByRole(data);
+      navigate(homePathForRole());
     } catch (err) {
       if (err.status === 403 && err.data?.requiresOtp) {
         setPendingVerification({

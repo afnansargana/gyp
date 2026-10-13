@@ -1,37 +1,18 @@
-// routes/appointmentRoutes.js
 const express = require("express");
 const authenticateToken = require("../middleware/authMiddleware");
+const {
+  requireAdmin,
+  requireStaff,
+} = require("../middleware/rbac.middleware");
 const appointmentController = require("../controllers/appointmentController");
+const Appointment = require("../models/Appointment");
 
 const router = express.Router();
-const {
-  createAppointment,
-  getAppointment,
-  updateAppointment,
-  assignMechanic,
-} = require("../controllers/appointmentController");
 
+// Customer: create booking
 router.post("/", authenticateToken, appointmentController.createAppointment);
-router.get("/", getAppointment);
-router.put("/:id", updateAppointment);
 
-// New route for assigning a mechanic
-router.put("/:id/assign", assignMechanic); // Ensure this matches the route used in your frontend
-// routes/appointmentRoutes.js
-router.get(
-  "/mechanic/:mechanicId",
-  authenticateToken,
-  appointmentController.getMechanicAppointments
-);
-
-router.put(
-  "/:id/update-status",
-  authenticateToken,
-  appointmentController.updateAppointmentStatus
-);
-
-//to get all booked slots
-
+// Public-ish availability check (used by booking form)
 router.get("/check-availability", async (req, res) => {
   const { service, date } = req.query;
 
@@ -43,5 +24,42 @@ router.get("/check-availability", async (req, res) => {
     res.status(500).json({ message: "Error fetching available slots" });
   }
 });
+
+// Mechanic: own appointments
+router.get(
+  "/mechanic/:mechanicId",
+  authenticateToken,
+  requireStaff,
+  appointmentController.getMechanicAppointments
+);
+
+// Staff: list / update
+router.get(
+  "/",
+  authenticateToken,
+  requireStaff,
+  appointmentController.getAppointment
+);
+
+router.put(
+  "/:id",
+  authenticateToken,
+  requireStaff,
+  appointmentController.updateAppointment
+);
+
+router.put(
+  "/:id/assign",
+  authenticateToken,
+  requireAdmin,
+  appointmentController.assignMechanic
+);
+
+router.put(
+  "/:id/update-status",
+  authenticateToken,
+  requireStaff,
+  appointmentController.updateAppointmentStatus
+);
 
 module.exports = router;

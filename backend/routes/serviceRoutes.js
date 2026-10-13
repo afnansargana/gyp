@@ -1,27 +1,29 @@
-// routes/serviceRoutes.js
 const express = require("express");
 const router = express.Router();
 const serviceController = require("../controllers/serviceController");
 const authenticateToken = require("../middleware/authMiddleware");
-const authenticateAdmin = require("../middleware/adminAuthMiddleware");
+const { requireAdmin } = require("../middleware/rbac.middleware");
 
+// Authenticated users can list services (booking flow)
+router.get("/", authenticateToken, serviceController.getServices);
+
+// Admin-only mutations
 router.post(
   "/",
   authenticateToken,
-  // authenticateAdmin,
+  requireAdmin,
   serviceController.createService
 );
-router.get("/", authenticateToken, serviceController.getServices);
 router.put(
   "/:id",
   authenticateToken,
-  // authenticateAdmin,
+  requireAdmin,
   serviceController.updateService
 );
 router.delete(
   "/:id",
   authenticateToken,
-  // authenticateAdmin,
+  requireAdmin,
   serviceController.deleteService
 );
 

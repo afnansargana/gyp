@@ -1,7 +1,7 @@
 import React from "react";
 import { Car, Cog, Wrench } from "lucide-react";
-import { FadeIn } from "../components/motion/FadeIn";
-import { StaggerList } from "../components/motion/StaggerList";
+import { FadeIn } from "./motion/FadeIn";
+import { StaggerList } from "./motion/StaggerList";
 
 const services = [
   {

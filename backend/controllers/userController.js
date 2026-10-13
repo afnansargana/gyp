@@ -9,12 +9,19 @@ const {
   RESEND_COOLDOWN_MS,
 } = require("../services/otp.service");
 
+function resolveRole(user) {
+  if (user.isAdmin) return "admin";
+  if (user.isMechanic) return "mechanic";
+  return "customer";
+}
+
 function signAuthToken(user) {
   return jwt.sign(
     {
       userId: user._id,
-      isAdmin: user.isAdmin,
-      isMechanic: user.isMechanic,
+      isAdmin: !!user.isAdmin,
+      isMechanic: !!user.isMechanic,
+      role: resolveRole(user),
     },
     secretKey,
     { expiresIn: "1h" }
@@ -27,8 +34,9 @@ function authResponse(user, token) {
     userId: user._id,
     username: user.username,
     email: user.email,
-    isAdmin: user.isAdmin,
-    isMechanic: user.isMechanic,
+    isAdmin: !!user.isAdmin,
+    isMechanic: !!user.isMechanic,
+    role: resolveRole(user),
     isVerified: user.isVerified,
   };
 }

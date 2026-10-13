@@ -5,9 +5,9 @@ import CardsSection from "./CardsSection";
 import DescriptionSection from "./DescriptionSection";
 import ProductCard from "./ProductCard";
 import { useCart } from "./CartContext";
-import { FadeIn } from "../components/motion/FadeIn";
-import { StaggerList } from "../components/motion/StaggerList";
-import { CardSkeleton } from "../components/ui";
+import { FadeIn } from "./motion/FadeIn";
+import { StaggerList } from "./motion/StaggerList";
+import { CardSkeleton } from "./ui";
 import { apiClient } from "../lib/api/client";
 
 const HomePage = () => {

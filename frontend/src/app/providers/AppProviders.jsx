@@ -1,5 +1,5 @@
 import React from "react";
-import { AppToaster } from "../../components/ui/Toast";
+import { AppToaster } from "../../Components/ui/Toast";
 
 /**
  * Global providers shell. Auth/socket providers will nest here in later phases.
