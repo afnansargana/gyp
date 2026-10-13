@@ -52,6 +52,8 @@ export default function SignupPage() {
     <AuthLayout
       title="Create your account"
       subtitle="Join AutoFixHub to book repairs, order parts, and track everything in one place."
+      step={0}
+      totalSteps={2}
       footer={
         <>
           Already registered?{" "}
@@ -102,7 +104,7 @@ export default function SignupPage() {
           {...register("password")}
         />
 
-        <Button type="submit" className="w-full" isLoading={isSubmitting}>
+        <Button type="submit" magnetic className="w-full" isLoading={isSubmitting}>
           Continue
         </Button>
       </form>

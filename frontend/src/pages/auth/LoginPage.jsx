@@ -10,7 +10,7 @@ import { loginSchema } from "../../lib/validations/auth.schema";
 import { authApi } from "../../lib/api/auth.api";
 import { useAuthStore } from "../../store/useAuthStore";
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
   const setPendingVerification = useAuthStore((s) => s.setPendingVerification);
@@ -31,7 +31,6 @@ export default function LoginPage({ onLogin }) {
     try {
       const { data } = await authApi.login(values);
       setSession(data);
-      onLogin?.();
       notify.success("Welcome back", `Signed in as ${data.username || values.username}`);
       navigate(homePathForRole());
     } catch (err) {
@@ -93,7 +92,7 @@ export default function LoginPage({ onLogin }) {
           {...register("password")}
         />
 
-        <Button type="submit" className="w-full" isLoading={isSubmitting}>
+        <Button type="submit" magnetic className="w-full" isLoading={isSubmitting}>
           Sign in
         </Button>
       </form>

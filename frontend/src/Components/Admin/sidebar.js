@@ -10,13 +10,14 @@ import {
   ChevronRight,
   LogOut,
   User,
-  Bell,
   BarChart3,
   Stethoscope,
-  ClipboardList,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useUiStore } from "../../store/useUiStore";
+import { authApi } from "../../lib/api/auth.api";
+import { NotificationBell } from "../layout/NotificationBell";
 
 /* ── Navigation config ── */
 const adminNavGroups = [
@@ -26,6 +27,10 @@ const adminNavGroups = [
       { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ],
+  },
+  {
+    label: "Tools",
+    items: [{ to: "/ai-diagnostics", label: "AI Diagnostics", icon: Stethoscope }],
   },
   {
     label: "Management",
@@ -49,12 +54,6 @@ const adminNavGroups = [
       },
     ],
   },
-  {
-    label: "Tools",
-    items: [
-      { to: "/ai-diagnostics", label: "AI Diagnostics", icon: Stethoscope },
-    ],
-  },
 ];
 
 const mechanicNavGroups = [
@@ -62,13 +61,7 @@ const mechanicNavGroups = [
     label: "Overview",
     items: [
       { to: "/mechanic/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ],
-  },
-  {
-    label: "Work",
-    items: [
-      { to: "/mechanic/appointments", label: "My Appointments", icon: CalendarCheck2 },
-      { to: "/mechanic/worklog", label: "Work Log", icon: ClipboardList },
+      { to: "/ai-diagnostics", label: "AI Diagnostics", icon: Stethoscope },
     ],
   },
 ];
@@ -167,13 +160,19 @@ function SidebarItem({ item, collapsed }) {
 
 /* ── Main Sidebar ── */
 const Sidebar = ({ profileImage, username }) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const setCollapsed = useUiStore((s) => s.setSidebarCollapsed);
   const navigate = useNavigate();
   const { clearSession, role } = useAuthStore();
 
   const navGroups = role === "admin" ? adminNavGroups : mechanicNavGroups;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      /* still clear local session */
+    }
     clearSession();
     navigate("/login");
   };
@@ -259,15 +258,7 @@ const Sidebar = ({ profileImage, username }) => {
       {/* ── Bottom: Profile + Logout ── */}
       <div className="flex-shrink-0 border-t border-ink-800/60 p-3 space-y-1">
         {/* Notification Bell */}
-        {!collapsed && (
-          <Link
-            to="/profile"
-            className="sidebar-link"
-          >
-            <Bell className="h-4 w-4 flex-shrink-0" />
-            <span>Notifications</span>
-          </Link>
-        )}
+        <NotificationBell collapsed={collapsed} />
 
         {/* Profile link */}
         <Link

@@ -1,13 +1,22 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { secretKey } = require("../config");
+const { refreshSecret } = require("../config");
 const {
   issueOtp,
   canResendOtp,
   verifyUserOtp,
   RESEND_COOLDOWN_MS,
 } = require("../services/otp.service");
+const {
+  signAccessToken,
+  signRefreshToken,
+  hashToken,
+  compareToken,
+  newJti,
+  setAuthCookies,
+  clearAuthCookies,
+} = require("../utils/tokens");
 
 function resolveRole(user) {
   if (user.isAdmin) return "admin";
@@ -15,22 +24,17 @@ function resolveRole(user) {
   return "customer";
 }
 
-function signAuthToken(user) {
-  return jwt.sign(
-    {
-      userId: user._id,
-      isAdmin: !!user.isAdmin,
-      isMechanic: !!user.isMechanic,
-      role: resolveRole(user),
-    },
-    secretKey,
-    { expiresIn: "1h" }
-  );
-}
-
-function authResponse(user, token) {
+async function issueSession(res, user) {
+  const accessToken = signAccessToken(user);
+  const jti = newJti();
+  const refreshToken = signRefreshToken(user, jti);
+  user.refreshTokenHash = await hashToken(refreshToken);
+  user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  user.tokens = (user.tokens || []).concat({ token: accessToken }).slice(-8);
+  await user.save();
+  setAuthCookies(res, { accessToken, refreshToken });
   return {
-    token,
+    token: accessToken,
     userId: user._id,
     username: user.username,
     email: user.email,
@@ -137,13 +141,11 @@ const userController = {
           .json({ message: messages[result.reason] || "OTP verification failed" });
       }
 
-      const token = signAuthToken(user);
-      user.tokens = user.tokens.concat({ token });
-      await user.save();
+      const session = await issueSession(res, user);
 
       res.status(200).json({
         message: "Email verified successfully",
-        ...authResponse(user, token),
+        ...session,
       });
     } catch (error) {
       console.error("Error verifying OTP:", error);
@@ -223,14 +225,70 @@ const userController = {
         });
       }
 
-      const token = signAuthToken(user);
-      user.tokens = user.tokens.concat({ token });
-      await user.save();
-
-      res.status(200).json(authResponse(user, token));
+      const session = await issueSession(res, user);
+      res.status(200).json(session);
     } catch (error) {
       console.error("Error logging in user:", error);
       res.status(500).json({ message: "Failed to login: Server Error" });
+    }
+  },
+
+  refresh: async (req, res) => {
+    try {
+      const raw = req.cookies?.refreshToken;
+      if (!raw) {
+        return res.status(401).json({ message: "No refresh token" });
+      }
+
+      let decoded;
+      try {
+        decoded = jwt.verify(raw, refreshSecret);
+      } catch {
+        clearAuthCookies(res);
+        return res.status(401).json({ message: "Refresh token expired" });
+      }
+
+      const user = await User.findById(decoded.userId);
+      if (!user?.refreshTokenHash) {
+        clearAuthCookies(res);
+        return res.status(401).json({ message: "Session revoked" });
+      }
+
+      const match = await compareToken(raw, user.refreshTokenHash);
+      if (!match) {
+        user.refreshTokenHash = null;
+        await user.save();
+        clearAuthCookies(res);
+        return res.status(401).json({ message: "Refresh token reused" });
+      }
+
+      const session = await issueSession(res, user);
+      res.status(200).json(session);
+    } catch (error) {
+      console.error("Refresh error:", error);
+      res.status(500).json({ message: "Failed to refresh session" });
+    }
+  },
+
+  logout: async (req, res) => {
+    try {
+      const raw = req.cookies?.refreshToken;
+      if (raw) {
+        try {
+          const decoded = jwt.verify(raw, refreshSecret);
+          await User.findByIdAndUpdate(decoded.userId, {
+            refreshTokenHash: null,
+            refreshTokenExpiresAt: null,
+          });
+        } catch {
+          /* expired refresh is still a logout */
+        }
+      }
+      clearAuthCookies(res);
+      res.status(200).json({ message: "Signed out" });
+    } catch (error) {
+      clearAuthCookies(res);
+      res.status(200).json({ message: "Signed out" });
     }
   },
 

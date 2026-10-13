@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "../../lib/utils";
 
 const variants = {
@@ -15,20 +16,11 @@ const sizes = {
   lg: "px-6 py-3 text-base",
 };
 
-/**
- * @param {object} props
- * @param {'primary'|'secondary'|'ghost'|'danger'} [props.variant]
- * @param {'sm'|'md'|'lg'} [props.size]
- * @param {boolean} [props.isLoading]
- * @param {React.ReactNode} [props.leftIcon]
- * @param {React.ReactNode} [props.rightIcon]
- * @param {string} [props.className]
- * @param {React.ReactNode} props.children
- */
 export function Button({
   variant = "primary",
   size = "md",
   isLoading = false,
+  magnetic = false,
   leftIcon,
   rightIcon,
   className,
@@ -37,11 +29,31 @@ export function Button({
   type = "button",
   ...props
 }) {
+  const ref = useRef(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const reduce = useReducedMotion();
+
+  const handleMove = (e) => {
+    if (reduce || !magnetic || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    setOffset({ x: x * 0.22, y: y * 0.22 });
+  };
+
+  const reset = () => setOffset({ x: 0, y: 0 });
+
   return (
-    <button
+    <motion.button
+      ref={ref}
       type={type}
       disabled={disabled || isLoading}
       className={cn(variants[variant], sizes[size], className)}
+      onMouseMove={handleMove}
+      onMouseLeave={reset}
+      animate={reduce || !magnetic ? undefined : { x: offset.x, y: offset.y }}
+      whileTap={reduce ? undefined : { scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.4 }}
       {...props}
     >
       {isLoading ? (
@@ -54,7 +66,7 @@ export function Button({
       )}
       <span>{children}</span>
       {!isLoading && rightIcon}
-    </button>
+    </motion.button>
   );
 }
 

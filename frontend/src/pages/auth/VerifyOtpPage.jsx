@@ -43,7 +43,7 @@ function CountdownRing({ seconds, total }) {
   );
 }
 
-export default function VerifyOtpPage({ onLogin }) {
+export default function VerifyOtpPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
@@ -84,7 +84,6 @@ export default function VerifyOtpPage({ onLogin }) {
       setStatus("success");
       setSession(data);
       clearPending();
-      onLogin?.();
       notify.success("Verified! 🎉", "Your account is ready.");
       setTimeout(() => navigate(homePathForRole()), 650);
     } catch (err) {
@@ -194,6 +193,7 @@ export default function VerifyOtpPage({ onLogin }) {
         {/* Submit */}
         <Button
           type="button"
+          magnetic
           className="w-full"
           isLoading={isSubmitting}
           disabled={otp.length !== 6 || status === "success"}

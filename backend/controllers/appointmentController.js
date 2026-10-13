@@ -1,5 +1,7 @@
 // controllers/appointmentController.js
 const Appointment = require("../models/Appointment");
+const User = require("../models/User");
+const { emitStaff, emitMechanic } = require("../utils/notify");
 
 exports.createAppointment = async (req, res) => {
   try {
@@ -21,11 +23,25 @@ exports.createAppointment = async (req, res) => {
 
     const appointment = new Appointment({
       ...req.body,
+      user: req.body.user || req.user.userId,
       status: "Pending",
     });
 
     await appointment.save();
-    res.status(201).json(appointment);
+    await User.findByIdAndUpdate(appointment.user, {
+      $push: { appointments: appointment._id },
+    });
+    const populated = await Appointment.findById(appointment._id).populate(
+      "user service"
+    );
+    emitStaff(req, "notification", {
+      type: "appointment",
+      title: "New appointment booked",
+      message: `${populated?.user?.username || "A customer"} booked a service`,
+      createdAt: new Date().toISOString(),
+      href: "/admin/appointments",
+    });
+    res.status(201).json(populated || appointment);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -73,10 +89,14 @@ exports.assignMechanic = async (req, res) => {
     appointment.status = "Assigned";
 
     await appointment.save();
-
-    // Populate the mechanic details before sending the response
-    await appointment.populate("assignedMechanic").execPopulate();
-
+    await appointment.populate("assignedMechanic");
+    emitMechanic(req, mechanicId, "notification", {
+      type: "assignment",
+      title: "New job assigned",
+      message: "An appointment was assigned to you",
+      createdAt: new Date().toISOString(),
+      href: "/mechanic/dashboard",
+    });
     res.status(200).json(appointment);
   } catch (error) {
     console.error("Error in assigning mechanic:", error.message);
@@ -90,13 +110,7 @@ exports.getMechanicAppointments = async (req, res) => {
 
     const appointments = await Appointment.find({
       assignedMechanic: mechanicId,
-    });
-
-    if (!appointments.length) {
-      return res
-        .status(404)
-        .json({ message: "No appointments found for this mechanic" });
-    }
+    }).populate("service user");
 
     res.status(200).json(appointments);
   } catch (error) {

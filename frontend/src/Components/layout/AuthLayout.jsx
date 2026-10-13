@@ -95,7 +95,7 @@ export function AuthLayout({ title, subtitle, children, footer, step, totalSteps
 
         {/* Footer tagline */}
         <p className="relative z-10 text-xs text-ink-600">
-          © 2024 AutoFixHub · Premium Auto Services
+          © {new Date().getFullYear()} AutoFixHub · Premium Auto Services
         </p>
       </div>
 

@@ -5,11 +5,13 @@ const http = require("http");
 const cors = require("cors");
 const path = require("path");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const mongoSanitize = require("express-mongo-sanitize");
 const { Server } = require("socket.io");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const Order = require("./models/Order");
 
 const app = express();
 const server = http.createServer(app);
@@ -40,6 +42,7 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
+app.use(cookieParser());
 
 // MongoDB query sanitization — prevent NoSQL injection
 app.use(mongoSanitize());
@@ -106,12 +109,11 @@ app.use((req, _res, next) => {
 });
 
 io.on("connection", (socket) => {
-  console.log(`Socket connected: ${socket.id}`);
-
-  // Clients join their role room on auth
   socket.on("join-room", (room) => {
-    socket.join(room); // e.g. "admin", "mechanic-<id>"
-    console.log(`Socket ${socket.id} joined room: ${room}`);
+    const allowed = ["admin", "staff", "customer"];
+    if (allowed.includes(room) || String(room).startsWith("mechanic-")) {
+      socket.join(room);
+    }
   });
 
   socket.on("disconnect", () => {
@@ -134,9 +136,11 @@ const cartRoutes = require("./routes/cartRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 // Apply auth rate limiter to signup/login endpoints
-app.use("/api/users/signup", authLimiter);
+app.use("/api/users/register", authLimiter);
 app.use("/api/users/login", authLimiter);
 app.use("/api/users/verify-otp", authLimiter);
 app.use("/api/users/resend-otp", authLimiter);
@@ -151,49 +155,54 @@ app.use("/api/cart", cartRoutes);
 app.use("/api", paymentRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ai", aiLimiter, aiRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
-// ── Inline payment intent (legacy, consider using paymentRoutes instead) ──
-app.post("/api/create-payment-intent", async (req, res) => {
-  const { amount } = req.body;
-  try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "usd",
-    });
-    res.send({ clientSecret: paymentIntent.client_secret });
-  } catch (error) {
-    res.status(500).send({ error: error.message });
-  }
-});
-
-// ── Stripe Webhook ──
-app.post("/api/webhooks/stripe", (req, res) => {
+app.post("/api/webhooks/stripe", async (req, res) => {
   const sig = req.headers["stripe-signature"];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
   let event;
+
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    if (webhookSecret) {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } else if (process.env.NODE_ENV !== "production") {
+      event = JSON.parse(req.body.toString());
+    } else {
+      return res.status(400).send("Webhook secret missing");
+    }
   } catch (err) {
     console.error("Stripe webhook signature error:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle events
-  switch (event.type) {
-    case "payment_intent.succeeded": {
+  try {
+    if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
-      console.log("Payment succeeded:", paymentIntent.id);
-      // TODO: update order status in DB
-      break;
+      const order = await Order.findOneAndUpdate(
+        { stripePaymentIntentId: paymentIntent.id },
+        { paymentStatus: "paid", status: "Processing" },
+        { new: true }
+      );
+      if (order) {
+        io.to("admin").emit("notification", {
+          type: "order",
+          title: "Payment confirmed",
+          message: `Order ${String(order._id).slice(-6)} is paid`,
+          createdAt: new Date().toISOString(),
+          href: "/admin/orders",
+        });
+      }
     }
-    case "payment_intent.payment_failed": {
+    if (event.type === "payment_intent.payment_failed") {
       const paymentIntent = event.data.object;
-      console.log("Payment failed:", paymentIntent.id);
-      break;
+      await Order.findOneAndUpdate(
+        { stripePaymentIntentId: paymentIntent.id },
+        { paymentStatus: "failed" }
+      );
     }
-    default:
-      console.log(`Unhandled Stripe event: ${event.type}`);
+  } catch (err) {
+    console.error("Stripe webhook handler error:", err);
   }
 
   res.json({ received: true });

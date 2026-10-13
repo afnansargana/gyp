@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
+import { downloadInvoice } from "../lib/api/invoices";
+import { notify } from "./ui";
+import { authApi } from "../lib/api/auth.api";
+import { useAuthStore } from "../store/useAuthStore";
 
 const Profile = ({ onProfileImageUpdate }) => {
   const [user, setUser] = useState(null);
@@ -103,9 +107,14 @@ const Profile = ({ onProfileImageUpdate }) => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm("Are you sure you want to logout?")) {
-      localStorage.removeItem("authToken");
+      try {
+        await authApi.logout();
+      } catch {
+        /* ignore */
+      }
+      useAuthStore.getState().clearSession();
       navigate("/login", { replace: true });
     }
   };
@@ -249,10 +258,11 @@ const Profile = ({ onProfileImageUpdate }) => {
                     <strong>Order ID:</strong> {order._id}
                   </p>
                   <ul className="mt-2">
-                    {order.items.map((item, index) => (
+                    {(order.products || order.items || []).map((item, index) => (
                       <li key={index} className="text-gray-700">
-                        {item.productName} (x{item.quantity}) - $
-                        {item.price * item.quantity}
+                        {item.title || item.productName || item.product?.title} (x
+                        {item.quantity}) - $
+                        {(item.price || 0) * (item.quantity || 1)}
                       </li>
                     ))}
                   </ul>
@@ -262,6 +272,19 @@ const Profile = ({ onProfileImageUpdate }) => {
                   <p className="mt-2 text-sm text-gray-600">
                     <strong>Status:</strong> {order.status}
                   </p>
+                  <button
+                    type="button"
+                    className="mt-3 w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                    onClick={async () => {
+                      try {
+                        await downloadInvoice(order._id);
+                      } catch (err) {
+                        notify.error("Invoice failed", err.message);
+                      }
+                    }}
+                  >
+                    Download invoice
+                  </button>
                 </div>
               ))}
             </div>
@@ -284,7 +307,8 @@ const Profile = ({ onProfileImageUpdate }) => {
                   className="p-4 border rounded-lg shadow bg-white"
                 >
                   <p>
-                    <strong>Service:</strong> {appointment.serviceName}
+                    <strong>Service:</strong>{" "}
+                    {appointment.service?.name || appointment.serviceName}
                   </p>
                   <p>
                     <strong>Date:</strong>{" "}

@@ -11,6 +11,8 @@ router.post("/register", userController.register);
 router.post("/login", userController.login);
 router.post("/verify-otp", userController.verifyOtp);
 router.post("/resend-otp", userController.resendOtp);
+router.post("/refresh", userController.refresh);
+router.post("/logout", userController.logout);
 
 // Define routes for user profile management
 router.get("/profile", authenticateToken, userController.getUserProfile);

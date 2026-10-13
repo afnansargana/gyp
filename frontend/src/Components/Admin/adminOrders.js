@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "./sidebar"; // Import the Sidebar component
+import { downloadInvoice } from "../../lib/api/invoices";
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -131,6 +132,12 @@ const AdminOrders = () => {
                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
                       >
                         Delete
+                      </button>
+                      <button
+                        onClick={() => downloadInvoice(order._id)}
+                        className="ml-2 px-4 py-2 bg-slate-800 text-white rounded hover:bg-slate-900 transition"
+                      >
+                        Invoice
                       </button>
                     </td>
                   </tr>

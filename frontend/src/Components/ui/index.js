@@ -10,3 +10,5 @@ export { EmptyState } from "./EmptyState";
 export { Badge } from "./Badge";
 export { Card, CardHeader, CardTitle, CardDescription } from "./Card";
 export { AppToaster, notify, toast } from "./Toast";
+export { Modal } from "./Modal";
+export { Dropdown } from "./Dropdown";

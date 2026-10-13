@@ -30,16 +30,14 @@ AutoFixHub is a web application designed for an automotive service center. It al
 ## Tech Stack
 
 ### Frontend
-- React.js
-- Tailwind CSS
-- Axios for HTTP requests
+- React.js, Tailwind CSS, Framer Motion
+- Zustand, Axios, React Hook Form + Zod
+- Socket.io-client, Recharts, Sonner
 
 ### Backend
-- Node.js
-- Express.js
-- MongoDB with Mongoose
-- JWT for authentication
-- Stripe API for payments
+- Node.js, Express.js, MongoDB / Mongoose
+- JWT, Helmet, CORS, express-rate-limit, mongo-sanitize
+- Socket.io, Stripe, PDFKit, Google Generative AI
 
 ## Installation
 
@@ -58,55 +56,73 @@ Ensure you have the following installed:
    cd AutoFixHub
    ```
 
-2. **Install dependencies:**
+2. **Install dependencies** (premium libraries are already listed in each `package.json`):
 
-   Navigate to the backend and frontend directories and install dependencies.
-
-   For Backend:
    ```bash
    cd backend
    npm install
-   ```
 
-   For Frontend:
-   ```bash
-   cd frontend
+   cd ../frontend
    npm install
    ```
 
-3. **Start the development server:**
+   Libraries added for the production upgrade:
+   - Frontend: `framer-motion`, `zustand`, `axios`, `react-hook-form`, `@hookform/resolvers`, `zod`, `socket.io-client`, `recharts`, `sonner`, `lucide-react`
+   - Backend: `helmet`, `express-rate-limit`, `express-mongo-sanitize`, `socket.io`, `pdfkit`, `@google/generative-ai`
 
-   For Backend:
+3. **Environment files**
+
    ```bash
+   copy backend\.env.example backend\.env
+   copy frontend\.env.example frontend\.env
+   ```
+
+4. **Start the development servers** (two terminals):
+
+   ```bash
+   cd backend
    npm start
    ```
 
-   For Frontend:
    ```bash
+   cd frontend
    npm start
    ```
 
-   The frontend will run on `http://localhost:3000` and the backend on `http://localhost:3001`.
+   Frontend: `http://localhost:3001` · Backend API: `http://localhost:3000`
+
+5. **MongoDB (do this last — everything else is already wired)**
+
+   Auth, bookings, orders, invoices, and dashboards need MongoDB running on `127.0.0.1:27017`.
+
+   **Option A — MongoDB as a Windows service**
+   1. Install [MongoDB Community Server](https://www.mongodb.com/try/download/community).
+   2. Open **PowerShell as Administrator** and run:
+      ```powershell
+      Start-Service MongoDB
+      ```
+   3. Restart the backend: `cd backend` then `npm start`.
+
+   **Option B — Docker**
+   ```powershell
+   docker run -d -p 27017:27017 --name autofix-mongo mongo:6
+   ```
+
+   Confirm in the backend terminal: `Mongoose connected to mongodb://127.0.0.1:27017/...`
+
+   Optional: set `GEMINI_API_KEY` in `backend/.env` for live Gemini diagnostics. Without it, the Symptom Analyzer still works with built-in mechanical rules.
 
 ## Environment Variables
 
 Create a `.env` file in the `backend` directory with the following variables:
 
+See `backend/.env.example` and `frontend/.env.example`. Minimum backend values:
+
 ```env
-# MongoDB connection string
-MONGO_URI=mongodb://localhost:27017/autofixhub
-
-# JWT Secret
-JWT_SECRET=your_jwt_secret
-
-# Stripe API key
-STRIPE_SECRET_KEY=your_stripe_secret_key
-
-# Node environment
-NODE_ENV=development
-
-# Port for backend server
-PORT=3001
+PORT=3000
+MONGODB_URI=mongodb://127.0.0.1:27017/autofixhub
+JWT_SECRET=change-me-in-production
+FRONTEND_URL=http://localhost:3001
 ```
 
 ## Usage
@@ -156,22 +172,40 @@ PORT=3001
 ```
 AutoFixHub/
 ├── backend/
+│   ├── app.js
+│   ├── conn/
 │   ├── controllers/
+│   ├── middleware/          # JWT + RBAC
 │   ├── models/
 │   ├── routes/
-│   ├── config/
-│   ├── server.js
-│   └── .env
+│   ├── services/            # OTP, email (AI / PDF / sockets next)
+│   └── utils/
 └── frontend/
-    ├── src/
-    │   ├── components/
-    │   ├── pages/
-    │   ├── App.js
-    │   └── index.js
     ├── public/
-    ├── .env
-    └── package.json
+    ├── src/
+    │   ├── app/
+    │   │   ├── providers/   # AppProviders (toasts, cart)
+    │   │   └── router/      # ProtectedRoute, RoleRoute
+    │   ├── Components/
+    │   │   ├── auth/        # Animated OTP input
+    │   │   ├── layout/      # Public, Auth, shells
+    │   │   ├── motion/      # FadeIn, Stagger, Magnetic, PageTransition
+    │   │   ├── ui/          # Button, Input, Toast, Skeleton, Modal
+    │   │   ├── Admin/
+    │   │   └── Mechanic/
+    │   ├── lib/
+    │   │   ├── api/         # Axios client + auth API
+    │   │   └── validations/ # Zod schemas
+    │   ├── pages/auth/      # Login, Signup, Verify OTP
+    │   ├── store/           # Zustand (auth, UI)
+    │   ├── App.js
+    │   └── index.css        # Design tokens
+    └── tailwind.config.js
 ```
+
+**Done in code:** design system, OTP auth, AI Symptom Analyzer, Socket.io notifications, analytics, PDF invoices, HttpOnly cookies + refresh rotation, Stripe webhook fulfillment.
+
+**You still need locally:** start MongoDB (see Installation step 5). After that, the project is complete.
 
 ## Contributing
 

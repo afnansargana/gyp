@@ -5,6 +5,8 @@ export const authApi = {
   login: (payload) => apiClient.post("/users/login", payload),
   verifyOtp: (payload) => apiClient.post("/users/verify-otp", payload),
   resendOtp: (payload) => apiClient.post("/users/resend-otp", payload),
+  refresh: () => apiClient.post("/users/refresh"),
+  logout: () => apiClient.post("/users/logout"),
 };
 
 export default authApi;

@@ -1,15 +1,15 @@
 import React from "react";
+import { CartProvider } from "../../Components/CartContext";
 import { AppToaster } from "../../Components/ui/Toast";
+import { SocketBridge } from "./SocketBridge";
 
-/**
- * Global providers shell. Auth/socket providers will nest here in later phases.
- */
 export function AppProviders({ children }) {
   return (
-    <>
+    <CartProvider>
       {children}
+      <SocketBridge />
       <AppToaster />
-    </>
+    </CartProvider>
   );
 }
 

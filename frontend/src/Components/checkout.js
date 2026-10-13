@@ -7,8 +7,9 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useCart } from "./CartContext";
+import { apiClient } from "../lib/api/client";
+import { notify } from "./ui";
 
 const stripePromise = loadStripe(
   "pk_test_51PjymZP5js6yvb4Qp17scldQD7dhSU0o9JHxwWvxReY14Xh6uDN80EjJTO4kT605buQsFqSDgbmZEA6v7S4GushX00kQBjl49q"
@@ -41,14 +42,11 @@ const CheckoutForm = () => {
     const card = elements.getElement(CardElement);
 
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/create-payment-intent",
-        {
-          amount: totalAmount * 100,
-        }
-      );
+      const response = await apiClient.post("/create-payment-intent", {
+        amount: Math.round(totalAmount * 100),
+      });
 
-      const { clientSecret } = response.data;
+      const { clientSecret, paymentIntentId } = response.data;
 
       const paymentResult = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
@@ -79,30 +77,23 @@ const CheckoutForm = () => {
             image: item.image,
           }));
 
-          const token = localStorage.getItem("authToken");
-
           const orderData = {
             items,
             totalAmount: paymentResult.paymentIntent.amount / 100,
+            stripePaymentIntentId:
+              paymentIntentId || paymentResult.paymentIntent.id,
+            paymentStatus: "paid",
           };
 
           try {
-            const orderResponse = await axios.post(
-              "http://localhost:3000/api/orders",
-              orderData,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
+            const orderResponse = await apiClient.post("/orders", orderData);
             if (orderResponse.status !== 201) {
               throw new Error("Order creation failed. Please contact support.");
             }
 
-            alert("Payment Successful!");
-            clearCart(); // Clear the cart after the order is successfully placed
-            navigate("/"); // Redirect to home or another page
+            notify.success("Payment successful", "Your order is confirmed.");
+            clearCart();
+            navigate("/");
           } catch (orderError) {
             setError("Order creation failed. Please contact support.");
           }

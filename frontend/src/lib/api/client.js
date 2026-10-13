@@ -5,6 +5,7 @@ const API_BASE =
 
 export const apiClient = axios.create({
   baseURL: API_BASE,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -18,29 +19,53 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+let refreshing = null;
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
+    const original = error.config || {};
+    const url = original.url || "";
+
+    if (
+      status === 401 &&
+      !original._retry &&
+      !url.includes("/users/refresh") &&
+      !url.includes("/users/login")
+    ) {
+      original._retry = true;
+      try {
+        if (!refreshing) {
+          refreshing = apiClient.post("/users/refresh").finally(() => {
+            refreshing = null;
+          });
+        }
+        const { data } = await refreshing;
+        if (data?.token) {
+          localStorage.setItem("authToken", data.token);
+        }
+        return apiClient(original);
+      } catch (refreshErr) {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("username");
+        localStorage.removeItem("email");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("isMechanic");
+        localStorage.removeItem("role");
+        localStorage.removeItem("mechanicId");
+        if (window.location.pathname !== "/login") {
+          window.location.assign("/login");
+        }
+        return Promise.reject(refreshErr);
+      }
+    }
+
     const message =
       error.response?.data?.message ||
       error.message ||
       "Something went wrong";
-
-    // Session expired / unauthorized — clear client auth
-    if (status === 401 && localStorage.getItem("authToken")) {
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("username");
-      localStorage.removeItem("email");
-      localStorage.removeItem("isAdmin");
-      localStorage.removeItem("isMechanic");
-      localStorage.removeItem("role");
-      localStorage.removeItem("mechanicId");
-      if (window.location.pathname !== "/login") {
-        window.location.assign("/login");
-      }
-    }
 
     return Promise.reject({
       ...error,

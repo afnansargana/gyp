@@ -1,17 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const orderController = require("../controllers/orderController");
+const invoiceController = require("../controllers/invoiceController");
 const authenticateToken = require("../middleware/authMiddleware");
 const authenticateAdmin = require("../middleware/adminAuthMiddleware");
 
-// Route for users to create an order
-router.post(
-  "/",
-  authenticateToken, // Only require authentication, not admin privileges
-  orderController.createOrder
-);
+router.post("/", authenticateToken, orderController.createOrder);
+router.get("/mine", authenticateToken, orderController.getMyOrders);
+router.get("/:id/invoice", authenticateToken, invoiceController.downloadInvoice);
 
-// Admin routes for managing orders
 router.get(
   "/",
   authenticateToken,
@@ -21,7 +18,6 @@ router.get(
 router.get(
   "/:id",
   authenticateToken,
-  authenticateAdmin,
   orderController.getOrderById
 );
 router.put(

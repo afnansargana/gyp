@@ -1,12 +1,15 @@
 const Order = require("../models/Order");
+const User = require("../models/User");
+const { emitStaff } = require("../utils/notify");
 
 const orderController = {
   createOrder: async (req, res) => {
     console.log("req.user", req.user);
     console.log("Order creation payload:", req.body);
     try {
-      const { items, totalAmount } = req.body;
-      const userId = req.user.userId; // Extract user ID from the request
+      const { items, totalAmount, stripePaymentIntentId, paymentStatus } =
+        req.body;
+      const userId = req.user.userId;
 
       // Ensure items are passed and valid
       if (!items || items.length === 0) {
@@ -25,10 +28,19 @@ const orderController = {
         })),
         totalAmount: totalAmount,
         status: "Pending",
+        paymentStatus: paymentStatus || (stripePaymentIntentId ? "paid" : "unpaid"),
+        stripePaymentIntentId: stripePaymentIntentId || null,
       });
 
-      // Save the order to the database
       await order.save();
+      await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
+      emitStaff(req, "notification", {
+        type: "order",
+        title: "New parts order",
+        message: `Order ${String(order._id).slice(-6)} · $${Number(totalAmount).toFixed(2)}`,
+        createdAt: new Date().toISOString(),
+        href: "/admin/orders",
+      });
 
       res.status(201).json({ message: "Order created successfully", order });
     } catch (error) {
@@ -50,6 +62,10 @@ const orderController = {
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
+      const ownerId = String(order.user?._id || order.user);
+      if (ownerId !== String(req.user.userId) && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
 
       res.status(200).json(order);
     } catch (error) {
@@ -59,6 +75,22 @@ const orderController = {
   },
 
   // New function: Get Orders
+  getMyOrders: async (req, res) => {
+    try {
+      const orders = await Order.find({ user: req.user.userId })
+        .populate({
+          path: "products.product",
+          model: "Product",
+          select: "title price",
+        })
+        .sort({ createdAt: -1 });
+      res.status(200).json(orders);
+    } catch (error) {
+      console.error("Error fetching my orders:", error);
+      res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  },
+
   getOrders: async (req, res) => {
     try {
       let orders;

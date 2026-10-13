@@ -1,16 +1,7 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 import { cn } from "../../lib/utils";
-
-/**
- * @typedef {object} InputProps
- * @property {string} [label]
- * @property {string} [error]
- * @property {string} [hint]
- * @property {React.ReactNode} [leftIcon]
- * @property {React.ReactNode} [rightIcon]
- * @property {string} [className]
- * @property {string} [wrapperClassName]
- */
 
 export const Input = forwardRef(function Input(
   {
@@ -22,11 +13,15 @@ export const Input = forwardRef(function Input(
     className,
     wrapperClassName,
     id,
+    type = "text",
     ...props
   },
   ref
 ) {
   const inputId = id || props.name;
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+  const resolvedType = isPassword && showPassword ? "text" : type;
 
   return (
     <div className={cn("w-full", wrapperClassName)}>
@@ -44,10 +39,11 @@ export const Input = forwardRef(function Input(
         <input
           ref={ref}
           id={inputId}
+          type={resolvedType}
           className={cn(
             "input-field",
             leftIcon && "pl-11",
-            rightIcon && "pr-11",
+            (rightIcon || isPassword) && "pr-11",
             error &&
               "border-accent-rose focus:border-accent-rose focus:ring-accent-rose/30",
             className
@@ -58,21 +54,43 @@ export const Input = forwardRef(function Input(
           }
           {...props}
         />
-        {rightIcon && (
-          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-500">
-            {rightIcon}
-          </span>
+        {isPassword ? (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-500 transition hover:text-ink-200"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        ) : (
+          rightIcon && (
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-500">
+              {rightIcon}
+            </span>
+          )
         )}
       </div>
-      {error && (
-        <p
-          id={`${inputId}-error`}
-          className="mt-1.5 animate-fade-up text-sm text-accent-rose"
-          role="alert"
-        >
-          {error}
-        </p>
-      )}
+      <AnimatePresence mode="wait">
+        {error && (
+          <motion.p
+            key={error}
+            id={`${inputId}-error`}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -2 }}
+            className="mt-1.5 text-sm text-accent-rose"
+            role="alert"
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
       {!error && hint && (
         <p id={`${inputId}-hint`} className="mt-1.5 text-sm text-ink-500">
           {hint}

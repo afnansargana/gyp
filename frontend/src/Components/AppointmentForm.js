@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import { useLocation } from "react-router-dom";
 
 const AppointmentForm = () => {
+  const location = useLocation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,6 +42,10 @@ const AppointmentForm = () => {
 
         // Set the services state with the fetched data
         setServices(response.data);
+        const preset = location.state?.serviceId;
+        if (preset) {
+          setFormData((prev) => ({ ...prev, service: preset }));
+        }
       } catch (error) {
         console.error(
           "Error fetching services:",

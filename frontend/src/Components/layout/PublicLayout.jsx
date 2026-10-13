@@ -3,18 +3,24 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Navbar from "../Navbar";
 import FooterSection from "../FooterSection";
+import { useAuthStore } from "../../store/useAuthStore";
+import { cn } from "../../lib/utils";
 
 /**
  * Shared shell for customer-facing pages: nav + animated outlet + footer.
+ * Staff already have a sidebar; navbar/footer stay hidden for them.
  */
 export function PublicLayout() {
   const location = useLocation();
   const reduce = useReducedMotion();
+  const role = useAuthStore((s) => s.role);
+  const isStaff = role === "admin" || role === "mechanic";
+  const isHome = location.pathname === "/";
 
   return (
     <div className="flex min-h-screen flex-col bg-ink-50 text-ink-900">
-      <Navbar />
-      <main className="flex-1">
+      {!isStaff && <Navbar />}
+      <main className={cn("flex-1", !isStaff && !isHome && "pt-16")}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -27,7 +33,7 @@ export function PublicLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
-      <FooterSection />
+      {!isStaff && <FooterSection />}
     </div>
   );
 }

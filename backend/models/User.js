@@ -58,6 +58,14 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    refreshTokenHash: {
+      type: String,
+      default: null,
+    },
+    refreshTokenExpiresAt: {
+      type: Date,
+      default: null,
+    },
     orders: [
       {
         type: mongoose.Schema.Types.ObjectId,

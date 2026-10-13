@@ -28,6 +28,16 @@ const orderSchema = new mongoose.Schema({
     enum: ["Pending", "Processing", "Completed"],
     default: "Pending",
   },
+  paymentStatus: {
+    type: String,
+    enum: ["unpaid", "paid", "failed"],
+    default: "unpaid",
+  },
+  stripePaymentIntentId: {
+    type: String,
+    default: null,
+    index: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

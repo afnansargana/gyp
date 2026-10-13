@@ -9,6 +9,7 @@ import { apiClient } from "../lib/api/client";
 const links = [
   { to: "/services", label: "Services" },
   { to: "/car-parts", label: "Parts" },
+  { to: "/ai-diagnostics", label: "AI Diagnostics" },
   { to: "/about-us", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
